@@ -1,0 +1,20 @@
+
+spring.jsdms.client:
+  source: zookeeper # Fixed
+  zookeeper:
+    connect-string: ipaddress:port # Zookeeper connect string
+  targets:
+  -
+    name: "repo-name" # save dir : (workingDirectory)/{resource-directory}/{name}
+    type: "git-repo" # Fixed
+    git-uri: "git@github.com:your/repo-name.git"
+    git-port: 22 #default 22
+    resource-directory: "data"
+    ssh-host-keys: # Your git server's ssh host key
+    - 21:74:c5:30:ab:a6:2c:e5:b7:27:6e:68:6d:c5:72:58 # Sample
+    ssh-key-plain: |
+      -----BEGIN RSA PRIVATE KEY-----
+      ...
+      ...
+      ...
+      -----END RSA PRIVATE KEY-----
