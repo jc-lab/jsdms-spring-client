@@ -15,10 +15,10 @@
  */
 package kr.jclab.jsdms.spring.client.internal;
 
-import com.jcraft.jsch.JSchException;
 import kr.jclab.jsdms.spring.client.JsDMSSpringClientProperties;
 import kr.jclab.jsdms.spring.client.event.RepositoryChangeHandler;
 import kr.jclab.jsdms.spring.client.service.JsDMSSpringClientService;
+import com.jcraft.jsch.JSchException;
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.exception.ZkMarshallingError;
 import org.I0Itec.zkclient.serialize.ZkSerializer;
@@ -27,6 +27,7 @@ import org.eclipse.jgit.api.*;
 import org.eclipse.jgit.api.errors.*;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.CredentialsProvider;
+import org.eclipse.jgit.transport.FetchResult;
 
 import java.io.File;
 import java.io.IOException;
@@ -143,6 +144,15 @@ public class ServiceImpl implements JsDMSSpringClientService {
                 }
                 if(git != null) {
                     System.out.println(resourceDir.getAbsolutePath() + ": master branch already downloaded");
+
+                    FetchCommand fetchCommand = configTransportCommand(targetMonitor, git.fetch());
+                    FetchResult fetchResult = fetchCommand.call();
+                    System.out.println(resourceDir.getAbsolutePath() + ": Fetch complete");
+
+                    PullCommand pullCommand = configTransportCommand(targetMonitor, git.pull());
+                    PullResult pullResult = pullCommand.call();
+                    System.out.println(resourceDir.getAbsolutePath() + ": Pull complete");
+
                 }else{
                     CloneCommand cloneCommand = configTransportCommand(targetMonitor, Git.cloneRepository());
                     cloneCommand.setURI(targetMonitor.getProperties().getGitUri());
@@ -203,8 +213,9 @@ public class ServiceImpl implements JsDMSSpringClientService {
                 }
                 git = Git.open(branchDir);
                 if(!git.getRepository().getBranch().equalsIgnoreCase(branchName)) {
-                    git.branchCreate()
+                    git.checkout()
                             .setForce(true)
+                            .setCreateBranch(true)
                             .setName(branchName)
                             .setUpstreamMode(CreateBranchCommand.SetupUpstreamMode.TRACK)
                             .setStartPoint("origin/" + branchName)

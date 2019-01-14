@@ -17,7 +17,6 @@ package kr.jclab.jsdms.spring.client;
 
 import kr.jclab.jsdms.spring.client.internal.ServiceImpl;
 import kr.jclab.jsdms.spring.client.service.JsDMSSpringClientService;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

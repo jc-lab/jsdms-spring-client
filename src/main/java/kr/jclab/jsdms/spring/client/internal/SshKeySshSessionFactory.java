@@ -20,7 +20,10 @@ import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.transport.*;
 import org.eclipse.jgit.util.FS;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 
 public class SshKeySshSessionFactory extends SshSessionFactory {
     private final JSch sch;
