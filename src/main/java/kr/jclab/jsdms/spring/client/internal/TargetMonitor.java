@@ -38,26 +38,17 @@ import java.util.Map;
 
 import static org.apache.zookeeper.ZooDefs.Ids.ANYONE_ID_UNSAFE;
 
-public class TargetMonitor implements IZkChildListener, IZkDataListener {
-    /**
-     * This is a completely open ACL .
-     */
-    public final ArrayList<ACL> ZOOKEEPER_OPEN_ACL_UNSAFE = new ArrayList<ACL>(
-            Collections.singletonList(new ACL(ZooDefs.Perms.ALL, ANYONE_ID_UNSAFE))
-    );
+public class TargetMonitor {
+    protected final ServiceImpl service;
 
-    private final ServiceImpl service;
+    protected final JsDMSSpringClientProperties.TargetProperties properties;
+    protected final String gitRepoName;
 
-    private final JsDMSSpringClientProperties.TargetProperties properties;
-    private final String gitRepoName;
-    private String zpathRoot;
+    protected final SshSessionFactory sshSessionFactory;
+    protected final CredentialsProvider credentialsProvider;
 
-    private final SshSessionFactory sshSessionFactory;
-    private final CredentialsProvider credentialsProvider;
-
-    private final File repoDir;
-    private final File resourceMasterDir;
-
+    protected final File repoDir;
+    protected final File resourceMasterDir;
 
     public TargetMonitor(ServiceImpl service, JsDMSSpringClientProperties.TargetProperties properties, String gitRepoName) throws JSchException, IOException {
         this.service = service;
@@ -80,24 +71,6 @@ public class TargetMonitor implements IZkChildListener, IZkDataListener {
         }
 
         this.credentialsProvider = null;
-    }
-
-    public void start(String zpath) {
-        final ZkClient zkClient = service.getZkClient();
-
-        this.zpathRoot = zpath;
-
-        if(!this.repoDir.exists()) {
-            this.repoDir.mkdirs();
-        }
-
-        service.asyncDownloadMasterBranch(this);
-
-        service.execute(() ->{
-            zkClient.createPersistent(zpath, true);
-            registerWatcherToChilds(this.zpathRoot, zkClient.getChildren(this.zpathRoot));
-            zkClient.subscribeChildChanges(this.zpathRoot, this);
-        });
     }
 
     public final File getRepoDir() {
@@ -132,55 +105,7 @@ public class TargetMonitor implements IZkChildListener, IZkDataListener {
         };
     }
 
-    private void onNodeDataChanged(String path, Object data) {
-        if(!(data instanceof byte[]))
-            return ;
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            Map<String, Object> jsonDoc = objectMapper.readValue((byte[])data, Map.class);
-            String before = (String)jsonDoc.get("before");
-            String after = (String)jsonDoc.get("after");
-
-            if(before != null && (after == null || !before.equalsIgnoreCase(after))) {
-                File fpath = new File(path);
-                String branchName = fpath.getName();
-                service.asyncPullBranch(TargetMonitor.this, branchName);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void registerWatcherToChilds(String parentPath, List<String> childs) {
-        ZkClient zkClient = service.getZkClient();
-        for(String child : childs) {
-            String zpath = parentPath + "/" + child;
-            zkClient.subscribeDataChanges(zpath, this);
-        }
-    }
-
-    @Override
-    public void handleChildChange(String parentPath, List<String> currentChilds) throws Exception {
-        ServiceImpl service = this.service;
-        registerWatcherToChilds(parentPath, currentChilds);
-
-        if(parentPath.equalsIgnoreCase(this.zpathRoot)) {
-            service.execute(() -> {
-                for (String child : currentChilds) {
-                    String cpath = parentPath + "/" + child;
-                    Object cdata = this.service.getZkClient().readData(cpath);
-                    onNodeDataChanged(cpath, cdata);
-                }
-            });
-        }
-    }
-
-    @Override
-    public void handleDataChange(String dataPath, Object data) throws Exception {
-        onNodeDataChanged(dataPath, data);
-    }
-
-    @Override
-    public void handleDataDeleted(String dataPath) throws Exception {
+    public void forceTrigger(String branchName) {
+        service.asyncPullBranch(TargetMonitor.this, branchName);
     }
 }

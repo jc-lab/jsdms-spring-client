@@ -23,4 +23,5 @@ public interface JsDMSSpringClientService {
     File findRepoDirByName(String name);
     void addRepositoryChangeHandler(RepositoryChangeHandler handler);
     void removeRepositoryChangeHandler(RepositoryChangeHandler handler);
+    void forceTrigger(String name, String branchName);
 }

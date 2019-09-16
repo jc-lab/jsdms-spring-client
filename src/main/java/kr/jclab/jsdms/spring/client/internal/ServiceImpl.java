@@ -31,6 +31,7 @@ import org.eclipse.jgit.transport.FetchResult;
 
 import java.io.File;
 import java.io.IOException;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -53,6 +54,25 @@ public class ServiceImpl implements JsDMSSpringClientService {
         this.properties = properties;
         executorService = Executors.newFixedThreadPool(2);
         executor = new OrderingExecutor(executorService);
+
+        for(JsDMSSpringClientProperties.TargetProperties targetProperties : this.properties.getTargets()) {
+            String gitUri = targetProperties.getGitUri();
+            int fpos = gitUri.lastIndexOf("/");
+            int dpot = gitUri.lastIndexOf(".");
+            if(fpos < 0) {
+                throw new IllegalArgumentException("Wrong git uri: " + gitUri);
+            }
+            String gitRepoName = gitUri.substring(fpos + 1, (dpot < 0) ? gitUri.length() : dpot);
+            ZookeeperTargetMonitor targetMonitor = null;
+            try {
+                targetMonitor = new ZookeeperTargetMonitor(this, targetProperties, gitRepoName);
+                targetMonitors.put(targetProperties.getName(), targetMonitor);
+            } catch (JSchException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
 
         if("zookeeper".compareToIgnoreCase(properties.getSource()) == 0) {
             this.zkClient = new ZkClient(properties.getZookeeper().getConnectString(), 60000, 5000, new ZkSerializer() {
@@ -83,20 +103,15 @@ public class ServiceImpl implements JsDMSSpringClientService {
             String gitUri = targetProperties.getGitUri();
             int fpos = gitUri.lastIndexOf("/");
             int dpot = gitUri.lastIndexOf(".");
-            if(fpos < 0) {
+            if (fpos < 0) {
                 throw new IllegalArgumentException("Wrong git uri: " + gitUri);
             }
             String gitRepoName = gitUri.substring(fpos + 1, (dpot < 0) ? gitUri.length() : dpot);
             String zpath = "/dms/git-repo-status/" + gitRepoName;
-            TargetMonitor targetMonitor = null;
-            try {
-                targetMonitor = new TargetMonitor(this, targetProperties, gitRepoName);
+            Object object = targetMonitors.get(targetProperties.getName());
+            if (object instanceof ZookeeperTargetMonitor) {
+                ZookeeperTargetMonitor targetMonitor = (ZookeeperTargetMonitor) object;
                 targetMonitor.start(zpath);
-                targetMonitors.put(targetProperties.getName(), targetMonitor);
-            } catch (JSchException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
             }
         }
     }
@@ -280,6 +295,14 @@ public class ServiceImpl implements JsDMSSpringClientService {
     public void removeRepositoryChangeHandler(RepositoryChangeHandler handler) {
         synchronized (this.repositoryChangeHandlers) {
             this.repositoryChangeHandlers.remove(handler);
+        }
+    }
+
+    @Override
+    public void forceTrigger(String name, String branchName) {
+        TargetMonitor targetMonitor = targetMonitors.get(name);
+        if(targetMonitor != null) {
+            targetMonitor.forceTrigger(branchName);
         }
     }
 
