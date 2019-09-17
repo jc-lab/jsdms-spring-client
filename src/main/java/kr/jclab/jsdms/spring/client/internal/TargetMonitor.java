@@ -61,6 +61,14 @@ public class TargetMonitor {
         this.credentialsProvider = null;
     }
 
+    void init() {
+        if(!this.repoDir.exists()) {
+            this.repoDir.mkdirs();
+        }
+
+        service.asyncDownloadMasterBranch(this);
+    }
+
     public final File getRepoDir() {
         return repoDir;
     }

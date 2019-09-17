@@ -49,12 +49,6 @@ public class ZookeeperTargetMonitor extends TargetMonitor implements IZkChildLis
 
         this.zpathRoot = zpath;
 
-        if(!this.repoDir.exists()) {
-            this.repoDir.mkdirs();
-        }
-
-        service.asyncDownloadMasterBranch(this);
-
         service.execute(() ->{
             zkClient.createPersistent(zpath, true);
             registerWatcherToChilds(this.zpathRoot, zkClient.getChildren(this.zpathRoot));

@@ -66,6 +66,7 @@ public class ServiceImpl implements JsDMSSpringClientService {
             ZookeeperTargetMonitor targetMonitor = null;
             try {
                 targetMonitor = new ZookeeperTargetMonitor(this, targetProperties, gitRepoName);
+                targetMonitor.init();
                 targetMonitors.put(targetProperties.getName(), targetMonitor);
             } catch (JSchException e) {
                 e.printStackTrace();
