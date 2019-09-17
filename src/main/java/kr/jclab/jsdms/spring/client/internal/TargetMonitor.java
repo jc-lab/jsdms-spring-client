@@ -16,13 +16,7 @@
 package kr.jclab.jsdms.spring.client.internal;
 
 import kr.jclab.jsdms.spring.client.JsDMSSpringClientProperties;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jcraft.jsch.JSchException;
-import org.I0Itec.zkclient.IZkChildListener;
-import org.I0Itec.zkclient.IZkDataListener;
-import org.I0Itec.zkclient.ZkClient;
-import org.apache.zookeeper.ZooDefs;
-import org.apache.zookeeper.data.ACL;
 import org.eclipse.jgit.api.TransportConfigCallback;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.SshSessionFactory;
@@ -31,12 +25,6 @@ import org.eclipse.jgit.transport.Transport;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
-import static org.apache.zookeeper.ZooDefs.Ids.ANYONE_ID_UNSAFE;
 
 public class TargetMonitor {
     protected final ServiceImpl service;
