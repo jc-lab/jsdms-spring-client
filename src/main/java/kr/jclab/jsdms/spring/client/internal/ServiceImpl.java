@@ -228,23 +228,33 @@ public class ServiceImpl implements JsDMSSpringClientService {
                     FileUtils.copyDirectory(masterDir, branchDir);
                 }
                 git = Git.open(branchDir);
-                List<Ref> branchies = git.branchList().call();
                 boolean hasBranch = false;
-                for(Ref ref : branchies) {
-                    String[] temp = ref.getName().split("/");
-                    if(branchName.equalsIgnoreCase(temp[temp.length - 1])) {
-                        hasBranch = true;
-                        break;
-                    }
+                {
+
+                    Ref refToCheck = git.getRepository().findRef(branchName);
+                    hasBranch = refToCheck != null && refToCheck.getName().startsWith("refs/heads/");
                 }
+                System.out.println("hasBranch : " + hasBranch);
                 if(!git.getRepository().getBranch().equalsIgnoreCase(branchName)) {
-                    git.checkout()
-                            .setForceRefUpdate(true)
-                            .setCreateBranch(!hasBranch)
-                            .setName(branchName)
-                            .setUpstreamMode(CreateBranchCommand.SetupUpstreamMode.TRACK)
-                            .setStartPoint("origin/" + branchName)
-                            .call();
+                    try {
+                        git.checkout()
+                                .setForced(true)
+                                .setCreateBranch(!hasBranch)
+                                .setName(branchName)
+                                .setUpstreamMode(CreateBranchCommand.SetupUpstreamMode.TRACK)
+                                .setStartPoint("origin/" + branchName)
+                                .call();
+                    }catch(Exception e) {
+                        e.printStackTrace();
+                        git.checkout()
+                                .setForce(true)
+                                .setForced(true)
+                                .setCreateBranch(!hasBranch)
+                                .setName(branchName)
+                                .setUpstreamMode(CreateBranchCommand.SetupUpstreamMode.TRACK)
+                                .setStartPoint("origin/" + branchName)
+                                .call();
+                    }
                 }
                 for(retry = 0; retry < 2; retry++) {
                     try {
